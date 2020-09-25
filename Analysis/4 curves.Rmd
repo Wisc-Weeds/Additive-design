@@ -1,0 +1,117 @@
+---
+title: "test"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r linear}
+library(ggplot2)
+x<-c(0,1,2,3,4,5,6,7,8,9,10)
+y<-c(0,10,20,30,40,50,60,70,80,90,100)
+data<-data.frame(x,y)
+
+a<-ggplot(data,aes(x,y)) + 
+  geom_smooth(method='lm',formula=y~x, size=1.3, color="black") + 
+   theme(axis.text=element_blank(), 
+        axis.title=element_blank(), 
+        panel.background = element_rect(fill="white", color = "white"), 
+        panel.grid.major = element_line(color = "white"), 
+  panel.grid.minor = element_blank(), panel.border = element_rect(fill=NA,color="black", size=0.5, 
+  linetype="solid"), legend.position=c(0.7,0.15), legend.text = element_text(size = 16, colour = "black", face="italic"), legend.key = element_rect(fill=NA), legend.key.height  = unit(1.5, "line"), legend.key.width = unit(2.2, "line"),
+legend.background = element_rect(fill =NA),  legend.title=element_blank())
+```
+
+
+
+```{r polynomial}
+x<-c(0,1,2,3,4,5,6,7,8,9,10)
+y<-c(0,10,20,30,40,50,40,30,20,10,0)
+data<-data.frame(x,y)
+
+b<-ggplot(data,aes(x,y)) + 
+  stat_smooth(method="lm", se=TRUE, fill=NA,
+                formula=y ~ poly(x, 2, raw=TRUE), size=1.3, colour="black") + 
+      theme(axis.text=element_blank(), 
+        axis.title=element_blank(), 
+        panel.background = element_rect(fill="white", color = "white"), 
+        panel.grid.major = element_line(color = "white"), 
+  panel.grid.minor = element_blank(), panel.border = element_rect(fill=NA,color="black", size=0.5, 
+  linetype="solid"), legend.text = element_blank(), legend.key = element_blank())
+b
+```
+
+
+```{r logistic}
+library(drc)
+data("ryegrass")
+ryegrass.LL.4 <- drm(rootl ~ conc, data = ryegrass, fct = LL.3())
+# new dose levels as support for the line
+newdata <- expand.grid(conc=exp(seq(log(0.5), log(25), length=25)))
+# predictions and confidence intervals
+pm <- predict(ryegrass.LL.4, newdata=newdata, interval="confidence")
+# new data with predictions
+newdata$p <- pm[,1]
+newdata$pmin <- pm[,2]
+newdata$pmax <- pm[,3]
+# plot curve
+library(ggplot2)
+# need to shift conc == 0 a bit up, otherwise there are problems with coord_trans
+ryegrass$conc0 <- ryegrass$conc
+ryegrass$conc0[ryegrass$conc0 == 0] <- 0.5
+# plotting the curve
+c<-ggplot(ryegrass, aes(x = conc0, y = rootl)) + 
+geom_line(data=newdata, aes(x=conc,  y=p), size=1.3) + ylim(0,8.5) +
+coord_trans(x="log") +
+      theme(axis.text=element_blank(), 
+        axis.title=element_blank(), axis.text.x=element_blank(), axis.text.y=element_blank(),
+        panel.background = element_rect(fill="white", color = "white"), 
+        panel.grid.major = element_line(color = "white"), 
+  panel.grid.minor = element_blank(), panel.border = element_rect(fill=NA,color="black", size=0.5, 
+  linetype="solid"), legend.text = element_blank(), legend.key = element_blank()) + scale_y_reverse()
+      c 
+```
+
+
+
+```{r rect hyperbola}
+library(broom)
+data=read.csv("test.csv")
+
+
+Model = nls(yl ~ (I*densityweed)/(1+(I/A)*densityweed), alg="port", data=data, start=list(I=c(60), A=c(80)), trace=T)
+
+summary(Model, correlation=T)
+
+
+
+nd = data.frame(densityweed=seq(0, 5, 0.01))
+
+pred<- augment(Model, newdata=nd)
+
+
+
+d<-ggplot(data, aes(x=densityweed, y=yl)) + geom_line(data = pred, size=1.3, aes(x=densityweed, y=.fitted)) +
+   theme(axis.text=element_blank(), 
+        axis.title=element_blank(), 
+        panel.background = element_rect(fill="white", color = "white"), 
+        panel.grid.major = element_line(color = "white"), 
+  panel.grid.minor = element_blank(), panel.border = element_rect(fill=NA,color="black", size=0.5, 
+  linetype="solid"), legend.text = element_blank(), legend.key = element_blank())
+  d
+```
+
+```{r}
+library(cowplot)
+Y<-plot_grid(a,b,c,d, nrow=2, ncol=2, hjust = -2, vjust = 2, labels = c('a', 'b', 'c', 'd')) 
+```
+
+```{r}
+ggsave("all.tiff", plot = Y, device = NULL, path = NULL,
+  scale = 1, units="in", width=8, height=8, dpi=300)
+```
+
+
+
